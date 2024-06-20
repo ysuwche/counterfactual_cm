@@ -1,0 +1,66 @@
+#DR法
+#結果変数
+y = df['gamesecond']
+#介入変数
+z = df['cm_dummy']
+#共変量
+X = df.drop(['cm_dummy', 'gamedummy', 'gamesecond', 'gamecount'], axis=1)
+#傾向スコアの算出
+ps_model = sm.Logit(z,X)
+result_ps = ps_model.fit()
+ps_score = result_ps.predict(X)
+#介入群のみのデータ
+g1_df = df.query("cm_dummy==1")
+y1 = g1_df['gamesecond']
+X1 = g1_df.drop(['cm_dummy', 'gamedummy', 'gamesecond', 'gamecount'], axis=1)
+#対照群のみのデータ
+g0_df = df.query("cm_dummy==0")
+y0 = g0_df['gamesecond']
+X0 = g0_df.drop(['cm_dummy', 'gamedummy', 'gamesecond', 'gamecount'], axis=1)
+#介入群に対するモデル
+model1 = sm.OLS(y1, X1).fit()
+#対照群に対するモデル
+model0 = sm.OLS(y0, X0).fit()
+#データ全体をpredict
+fitted1 = model1.predict(X)
+fitted0 = model0.predict(X)
+
+#DR推定量の算出
+n = len(df)
+dre1 = sum(z * y / ps_score + (1 - z  / ps_score)* fitted1) / n
+dre0 = sum((1 - z) /(1 - ps_score) * y + (1 - (1 - z)  / (1 - ps_score))* fitted0) / n
+
+#推定
+ATE = dre1 - dre0
+ATE
+
+
+#傾向スコアを用いたIPW
+#傾向スコアは先ほど求めた値を使う
+D = z
+Y = y
+
+E_Y1= np.sum((D/ps_score)*Y)/np.sum(D/ps_score)
+E_Y0 = np.sum(((1 - D) / (1 - ps_score))*Y) / np.sum((1 - D) / (1 - ps_score))
+
+ATE = E_Y1 - E_Y0
+print(ATE)
+
+
+#層別マッチング
+# マッチング推定を行う関数の作成
+def ps_stratificasion(df, step=0.1):
+
+    scores = np.arange(0, 1, step)
+
+    match_arr = np.array([])
+    for score in scores:
+        _df = df[(df["傾向スコア"]>=score) & (df["傾向スコア"]<score+step)]
+        tmp0 = np.array(_df[_df["cm_dummy"]==0]["gamesecond"])
+        tmp1 = np.array(_df[_df["cm_dummy"]==1]["gamesecond"])
+        if (tmp0.size!=0) and (tmp1.size!=0):
+            match_arr = np.append(match_arr, tmp1.mean() - tmp0.mean())
+
+    return match_arr.mean()
+
+ps_stratificasion(df, step=0.05)
