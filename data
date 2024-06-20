@@ -1,0 +1,6 @@
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+import statsmodels.api as sm
+
+df = pd.read_csv('https://raw.githubusercontent.com/iwanami-datascience/vol3/master/kato%26hoshino/q_data_x.csv')
