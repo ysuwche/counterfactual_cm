@@ -1,0 +1,11 @@
+#回帰で確かめてみる
+
+#変数作成
+z_df = df['cm_dummy']
+y_df = df['gamesecond']
+x0_df = df.drop(['gamedummy', 'gamesecond', 'gamecount'], axis=1)
+x1_df = df.drop(['cm_dummy', 'gamedummy', 'gamesecond', 'gamecount'], axis=1)
+
+model = sm.OLS(y_df, x0_df)
+result = model.fit()
+result.summary()
